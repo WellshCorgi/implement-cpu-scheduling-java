@@ -120,8 +120,8 @@ class FCFS implements Scheduler{
             finishingTime = currentTime;
             int turnaroundTime = finishingTime - p.arrivalTime;
             totalTurnaroundTime += turnaroundTime;
-            int waitTime = turnaroundTime - cpuTime;
-            totalWaitingTime += (turnaroundTime - cpuTime);
+            int waitTime = turnaroundTime - cpuTime -ioTime;
+            totalWaitingTime += (turnaroundTime - cpuTime - ioTime);
             totalCpuBurstTime += cpuTime;
             totalIoBurstTime += ioTime;
             totalProcessesCompleted++;
@@ -189,7 +189,7 @@ class SJF implements Scheduler {
             finishingTime = currentTime;
             int turnaroundTime = finishingTime - currentProcess.arrivalTime;
             totalTurnaroundTime += turnaroundTime;
-            int waitTime = turnaroundTime - cpuTime;
+            int waitTime = turnaroundTime - cpuTime - ioTime;
             totalWaitingTime += (turnaroundTime - cpuTime);
             totalCpuBurstTime += cpuTime;
             totalIoBurstTime += ioTime;
@@ -264,7 +264,7 @@ class RoundRobin implements Scheduler {
             finishingTime = currentTime;
             int turnaroundTime = finishingTime - currentProcess.arrivalTime;
             totalTurnaroundTime += turnaroundTime;
-            int waitTime = turnaroundTime - cpuTime;
+            int waitTime = turnaroundTime - cpuTime - ioTime;
             totalWaitingTime += waitTime;
             totalCpuBurstTime += cpuTime;
             totalIoBurstTime += ioTime;
