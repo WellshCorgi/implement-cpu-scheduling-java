@@ -9,14 +9,62 @@ class Process {
     int cpuRequiredTime;
     int cpuBurstTime;
     int ioBurstTime;
+    int startProcessTime = -1;
+    int burstedCpuTime = 0;
+    int burstedIOTime = 0;
 
-    public Process(int arrivalTime, int cpuRequiredTime, int cpuBurstTime, int ioBurstTime) {
+    public Process(int arrivalTime, int cpuRequiredTime, int cpuBurstTime, int ioBurstTime, int startProcessTime, int burstedCpuTime, int burstedIOTime) {
         this.arrivalTime = arrivalTime;
         this.cpuRequiredTime = cpuRequiredTime;
         this.cpuBurstTime = cpuBurstTime;
         this.ioBurstTime = ioBurstTime;
+        this.burstedCpuTime = cpuRequiredTime;
+    }
+    public int getStartProcessTime() {
+        return startProcessTime;
+    }
+    public void setStartProcessTime(int startProcessTime) {
+        this.startProcessTime = startProcessTime;
+    }
+    public void setburstedCpuTime(int burstedCpuTime) {
+        this.burstedCpuTime = burstedCpuTime;
+    }
+    public void setburstedIOTime(int burstedIOTime) {
+        this.burstedIOTime = burstedIOTime;
+    }
+    public int getBurstedCpuTime(){
+        return burstedCpuTime;
+    }
+    public int getBurstedIOTime(){
+        return burstedIOTime;
+    }
+
+    public int getArrivalTime() {
+        return arrivalTime;
+    }
+
+    public int getCpuBurstTime() {
+        return cpuBurstTime;
+    }
+
+    public int getIoBurstTime() {
+        return ioBurstTime;
+    }
+    public int getCpuRequiredTime() {
+        return cpuRequiredTime;
+    }
+    public void setCpuRequiredTime(int cpuRequiredTime) {
+        this.cpuRequiredTime = cpuRequiredTime;
+    }
+    @Override
+    public String toString() {
+        return  arrivalTime +
+                " "+ cpuRequiredTime +
+                " " + ioBurstTime +
+                " " + cpuBurstTime;
     }
 }
+
 
 class SchedulingSimulation {
     private int processCnt = 0;
@@ -35,7 +83,7 @@ class SchedulingSimulation {
         List<List<Integer>> groupedProcesses = groupProcessInfo(sp,4);// 프로세스 정보 4개씩 그룹화
         List<Process> processList = new ArrayList<>();
         for(List<Integer> process : groupedProcesses){
-             Process p = new Process(process.get(0), process.get(1),process.get(2), process.get(3));
+            Process p = new Process(process.get(0), process.get(1),process.get(2), process.get(3),0,0,0);
             processList.add(p);
         }
         processList.sort(Comparator.comparingInt(p -> p.arrivalTime));// 도착한 순서대로 정렬
@@ -145,7 +193,6 @@ class FCFS implements Scheduler{
 }
 class SJF implements Scheduler {
     private List<Process> processList;
-    private List<Process> readyQueue = new ArrayList<>();
 
     public SJF(List<Process> processList) {
         this.processList = processList;
@@ -154,10 +201,6 @@ class SJF implements Scheduler {
     public void run() {
         System.out.println("--------SJF--------");
         Random random = new Random();
-        readyQueue.add(processList.get(0));
-        processList.remove(0);
-        processList.sort(Comparator.comparingInt(p -> p.cpuBurstTime));
-        readyQueue.addAll(processList);
         int currentTime = 0;
         int finishingTime=0;
         int totalTurnaroundTime = 0;
@@ -165,9 +208,42 @@ class SJF implements Scheduler {
         int totalCpuBurstTime = 0;
         int totalIoBurstTime = 0;
         int totalProcessesCompleted = 0;
-        for (Process currentProcess : readyQueue) {
-            while(currentTime < currentProcess.arrivalTime){
-                currentTime+=1;
+        List<Process> remainingProcesses = new ArrayList<>(processList);
+        System.out.println(remainingProcesses.size());
+
+
+        for (int i=0; i<processList.size();i++) {
+            Process selectedProcess = null;
+            int selectedIndex = -1;
+            if(remainingProcesses.get(0).arrivalTime<currentTime){
+                Process targetProcess = null;
+                for(Process process:remainingProcesses){
+                    if(process.getArrivalTime()<=currentTime){
+                        targetProcess=process;
+                        break;
+                    }
+                }
+                if(targetProcess !=null){
+                    int leastB = Integer.MAX_VALUE;
+                    int targetIndex =-1;
+                    for (int k = 0; k<remainingProcesses.size(); k++){
+                        Process process = remainingProcesses.get(k);
+                        if(process.getArrivalTime()<=currentTime && process.getCpuBurstTime()<leastB){
+                            leastB=process.getCpuBurstTime();
+                            targetIndex = k;
+                            selectedIndex=k;
+                        }
+                        selectedProcess = remainingProcesses.get(targetIndex);
+                    }
+                }
+            } else if(remainingProcesses.get(0).arrivalTime>=currentTime){ ////
+                remainingProcesses.sort(Comparator.comparingInt(p -> p.arrivalTime));
+                selectedProcess = remainingProcesses.get(0);
+            }else
+                break;
+            Process currentProcess = selectedProcess;
+            if(currentTime < currentProcess.getArrivalTime()){
+                currentTime=currentProcess.arrivalTime;
             }
             int cpuTime = 0;
             int ioTime = 0;
@@ -190,7 +266,7 @@ class SJF implements Scheduler {
             int turnaroundTime = finishingTime - currentProcess.arrivalTime;
             totalTurnaroundTime += turnaroundTime;
             int waitTime = turnaroundTime - cpuTime - ioTime;
-            totalWaitingTime += (turnaroundTime - cpuTime);
+            totalWaitingTime += waitTime;
             totalCpuBurstTime += cpuTime;
             totalIoBurstTime += ioTime;
             totalProcessesCompleted++;
@@ -200,6 +276,7 @@ class SJF implements Scheduler {
             System.out.println("I/O Time: " + ioTime);
             System.out.println("Waiting Time: " + waitTime);
             System.out.println("-----------------");
+            remainingProcesses.remove(selectedProcess); // 스케줄링이 끝난 프로세스 제거
         }
         System.out.println("============= [ Summary data of Executed Scheduler ] =============");
         System.out.println("Scheduler Finishing Time : "+ finishingTime);
@@ -222,73 +299,107 @@ class RoundRobin implements Scheduler {
 
     public void run() {
         System.out.println("--------Round Robin--------");
+        List<Process>listProcess = new ArrayList<>(processList);
+        Queue<Process>readyQueue = new LinkedList<>();
         Random random = new Random();
-        List<Process> readyQueue = new ArrayList<>();
-        int currentTime = 0;
-        int finishingTime = 0;
-        int totalTurnaroundTime = 0;
+
+        int currentTime=0;
+        int totalCpuBurstTime=0;
+        int totalTurnaroundTime =0;
         int totalWaitingTime = 0;
-        int totalCpuBurstTime = 0;
-        int totalIoBurstTime = 0;
         int totalProcessesCompleted = 0;
+        Process firstProcess = listProcess.get(0);
+        if(firstProcess.getArrivalTime()>0){
+            currentTime+=firstProcess.getArrivalTime();
+        }
+        readyQueue.offer(firstProcess);
+        listProcess.remove(firstProcess);
+        while(!readyQueue.isEmpty() || !listProcess.isEmpty()){
+            int execQuantum = quantum;
 
-        for (Process currentProcess : processList) {
-            while (currentTime < currentProcess.arrivalTime) {
-                currentTime += 1;
+            while (!listProcess.isEmpty() && listProcess.get(0).getArrivalTime() <= currentTime) {
+                Process process = listProcess.get(0);
+                readyQueue.offer(process);
+                listProcess.remove(0);
             }
-            int cpuTime = 0;
-            int ioTime = 0;
+            if(readyQueue.isEmpty()&&!listProcess.isEmpty()){
+                currentTime = listProcess.get(0).getArrivalTime();
+                readyQueue.offer(listProcess.get(0));
+                listProcess.remove(0);
+            }
 
-            while (currentProcess.cpuRequiredTime > 0) {
-                int randomCPUBurst = random.nextInt(Math.max(1, currentProcess.cpuBurstTime - 1)) + 1;
+            int sumIOBurstTime=0;
+            Process currentProcess = readyQueue.poll();
+            if(currentProcess.getStartProcessTime()==-1){
+                currentProcess.setStartProcessTime(currentTime);
+                totalWaitingTime+=currentProcess.getStartProcessTime();
+            }
+            int randomCPUBurst = random.nextInt(Math.max(1, currentProcess.cpuBurstTime - 1)) + 1;
+            int execCPUBurst = Math.min(quantum, randomCPUBurst);
+            currentTime+=execCPUBurst;
+            totalCpuBurstTime+=execCPUBurst;
+            execQuantum -= execCPUBurst;
+            int remainCPUBurst = currentProcess.cpuRequiredTime - execCPUBurst;
+            if(execQuantum>0){
+                while(execCPUBurst>0 && execQuantum>0 && remainCPUBurst>0){
+                    int randomIOBurst = random.nextInt(Math.max(1, currentProcess.ioBurstTime - 1)) + 1;
+                    int exeIOBurst = Math.min(execQuantum, randomIOBurst);
+                    currentTime +=exeIOBurst;
+                    execQuantum -=exeIOBurst;
+                    sumIOBurstTime+= exeIOBurst;
+                    currentProcess.setburstedIOTime(sumIOBurstTime);
 
-                for (int i = 0; i < randomCPUBurst; i++) {
-                    currentProcess.cpuRequiredTime -= 1;
-                    cpuTime += 1;
-                    currentTime += 1;
+                    int random2CPUBurst = random.nextInt(Math.max(1, currentProcess.cpuBurstTime - 1)) + 1;
+                    int exec2CPUBurst = Math.min(execQuantum, random2CPUBurst);
+                    currentTime+=exec2CPUBurst;
+                    totalCpuBurstTime+=exec2CPUBurst;
 
-                    if (currentProcess.cpuRequiredTime == 0) {
+
+                    execQuantum -= exec2CPUBurst;
+                    remainCPUBurst -= exec2CPUBurst;
+
+
+                    if(remainCPUBurst<0){
+                        currentTime += Math.abs(remainCPUBurst);
                         break;
                     }
-
-                    int randomIOBurst = random.nextInt(Math.max(1, currentProcess.ioBurstTime - 1)) + 1;
-                    ioTime += randomIOBurst;
-                    currentTime += randomIOBurst;
-                }
-
-                if (currentProcess.cpuRequiredTime > 0) {
-                    readyQueue.add(currentProcess);
+                    if (remainCPUBurst == 0) {
+                        break;
+                    }
                 }
             }
 
-            finishingTime = currentTime;
-            int turnaroundTime = finishingTime - currentProcess.arrivalTime;
-            totalTurnaroundTime += turnaroundTime;
-            int waitTime = turnaroundTime - cpuTime - ioTime;
-            totalWaitingTime += waitTime;
-            totalCpuBurstTime += cpuTime;
-            totalIoBurstTime += ioTime;
-            totalProcessesCompleted++;
+            if(execQuantum==0 && remainCPUBurst>0){
+                currentProcess.setCpuRequiredTime(remainCPUBurst); // cpuRequiredTime 수정
+                readyQueue.offer(currentProcess);
 
-            System.out.println("Finishing Time: " + finishingTime);
-            System.out.println("Turnaround Time: " + turnaroundTime);
-            System.out.println("CPU Time: " + cpuTime);
-            System.out.println("I/O Time: " + ioTime);
-            System.out.println("Waiting Time: " + waitTime);
-            System.out.println("-----------------");
+            }
+            if(remainCPUBurst == 0){
+                totalProcessesCompleted++;
+                totalTurnaroundTime+=(currentTime-currentProcess.getArrivalTime());
+                System.out.println("Finishing Time: " + currentTime);
+                System.out.println("Turnaround Time: " + (currentTime-currentProcess.getArrivalTime()));
+                System.out.println("CPU Time: " + currentProcess.getBurstedCpuTime());
+                System.out.println("I/O Time: " + currentProcess.getBurstedIOTime());
+                System.out.println("Waiting Time: " + currentProcess.getStartProcessTime());
+                System.out.println("-----------------");
+
+            }
+
+
         }
-
+        double cpuUtilization =((double) totalCpuBurstTime / currentTime);
+        double ioUtilization = 1-cpuUtilization;
         System.out.println("============= [ Summary data of Executed Scheduler ] =============");
-        System.out.println("Scheduler Finishing Time: " + finishingTime);
-        System.out.println("Average turnaround time: " + String.format("%.2f", ((double) totalTurnaroundTime / processList.size())));
-        System.out.println("Average Waiting Time: " + String.format("%.2f", ((double) totalWaitingTime / processList.size())));
-        System.out.println("CPU Utilization: " + String.format("%.2f", ((double) totalCpuBurstTime / finishingTime) * 100) + "%");
-        System.out.println("I/O Utilization: " + String.format("%.2f", ((double) totalIoBurstTime / finishingTime) * 100) + "%");
-        System.out.println("Throughput (Processes completed per hundred time units): " + String.format("%.2f", ((double) totalProcessesCompleted / (finishingTime) * 100)));
+        System.out.println("Scheduler Finishing Time : "+ currentTime);
+        System.out.println("Average turnaround time : "+ String.format("%.2f", ((double)totalTurnaroundTime/processList.size())));
+        System.out.println("Average Waiting Time: " +  String.format("%.2f", ((double) totalWaitingTime / processList.size())));
+        System.out.println("CPU Utilization: " + String.format("%.2f",cpuUtilization*100)+ "%");
+        System.out.println("I/O Utilization: " + String.format("%.2f",ioUtilization*100)+ "%");
+        System.out.println("Throughput (Processes completed per hundred time units): " + String.format("%.2f",((double)totalProcessesCompleted/(currentTime)*100)));
+
     }
 }
-
-
 
 
 

@@ -5,7 +5,7 @@
 
 ## 🕰️ 개발 기간 (Development period)
 * 23.05.06일 - 23.05.13일
-
+* 23.05.17일 - 23.05.21일 [Hot fix]
 ### ⚙️ 개발 환경 (Development environment)
 - Language : Java(jdk 1.8(Zulu Open JDK 11.04), Java 11)
 - Tool : [JetBrain IntelliJ IDEA CE](https://www.jetbrains.com/ko-kr/idea/download/#section=mac)
@@ -75,5 +75,7 @@ Throughput in processes completed per hundred time units : 20.00 %
 ```
 Cpu Burst , Io Burst가 Random값으로 오차범위의 값 이내의 결과 출력
 ```
+### FIXED LOG
+- 5/22 -> Fixed SJF, RoundRobin Improved the way logic works.
 ### ★What needs to be improved in this project
 - 자바 디자인 패턴 (SRP,DIP)를 적용하기 및 OCP 규칙 위반 수정하기. [Applying Java design patterns and implementing SRP, correcting OCP rule violations]
