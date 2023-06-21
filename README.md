@@ -5,7 +5,8 @@
 
 ## 🕰️ 개발 기간 (Development period)
 * 23.05.06일 - 23.05.13일
-* 23.05.17일 - 23.05.21일 [Hot fix]
+* 23.05.17일 - 23.05.21일 
+* 23.06.19일 - 23.06.21일 [FIX & Latest Upload]
 ### ⚙️ 개발 환경 (Development environment)
 - Language : Java(jdk 1.8(Zulu Open JDK 11.04), Java 11)
 - Tool : [JetBrain IntelliJ IDEA CE](https://www.jetbrains.com/ko-kr/idea/download/#section=mac)
@@ -17,10 +18,14 @@
 #### SJF
 - 도착한 순서와 상관없이 실행 시간이 가장 짧은 작업이 먼저 실행되는 특징.
 - 평균 대기 시간을 최소화할 수 있는 알고리즘
+- 우선순위 큐로 구현
 
 #### RoundRobin
 - 각 작업에 동일한 시간 할당량을 부여 (Quantum)
 - 할당된 시간 동안 작업을 실행한 후 다음 작업으로 전환하는 방식으로 동작
+
+### What's important about scheduling
+- (Process 1)의 CPU Burst가 실행한 뒤 I/O가 진행된다면 (Process 1)이외의 다른 프로세스에게 CPU를 할당하여 스케줄링하는 방식
 
 
 ## 👽 How to execute it?
@@ -77,5 +82,6 @@ Cpu Burst , Io Burst가 Random값으로 오차범위의 값 이내의 결과 출
 ```
 ### FIXED LOG
 - 5/22 -> Fixed SJF, RoundRobin Improved the way logic works.
+- 6/21 -> I got feedback from the professor in charge and redesigned all the working methods.
 ### ★What needs to be improved in this project
 - 자바 디자인 패턴 (SRP,DIP)를 적용하기 및 OCP 규칙 위반 수정하기. [Applying Java design patterns and implementing SRP, correcting OCP rule violations]
